@@ -1,73 +1,51 @@
-import React, { Component } from "react";
-import shortid from "shortid";
+import { useState, useEffect } from "react";
 import css from './App.module.css';
 import ContactForm from "./ContactForm/ContactForm";
 import Filter from "./Filter/Filter";
 import ContactList from "./ContactList/ContactList";
 
-class App extends Component {
-  state = {
-    contacts: [
+export default function App() {
+  const [contacts, setContacts] = useState(() =>
+    JSON.parse(localStorage.getItem('Contacts')) ?? [
       { id: 'id-1', name: 'Rosie Simpson', number: '459-12-56' },
       { id: 'id-2', name: 'Hermione Kline', number: '443-89-12' },
       { id: 'id-3', name: 'Eden Clements', number: '645-17-79' },
-      { id: 'id-4', name: 'Annie Copeland', number: '227-91-26' },
-    ],
-    filter: '',
-  };
+      { id: 'id-4', name: 'Annie Copeland', number: '227-91-26' }
+    ]);
+  
+  const [filter, setFilter] = useState('');
 
-  formSubmitHandler = contact => {
-    const id = shortid.generate();
-    const contactObject = { ...contact, id };
+  useEffect(() => {
+    localStorage.setItem("Contacts", JSON.stringify(contacts));
+  }, [contacts]);
+
+  const formSubmitHandler = data => {
     if (
-      !this.state.contacts.find(
-        ({ name }) => name.toLocaleLowerCase() === contact.name.toLowerCase()
+      !contacts.find(
+        (contact) => data.name.toLocaleLowerCase() === contact.name.toLowerCase()
       )
     ) {
-      this.setState(({ contacts }) => ({
-        contacts: [...contacts, contactObject],
-      }));
+      setContacts((prevState) => (prevState ? [...prevState, data] : [data]));
     } else {
-      alert(`${contact.name} is already in contacts.`);
+      alert(`${data.name} is already in contacts.`);
     }
   };
-
-  filterContacts = () => {
-    return this.state.contacts.filter(contact =>
-      contact.name.toLowerCase().includes(this.state.filter.toLowerCase())
+    
+  const filterContacts = contacts.filter(contact => 
+      contact.name.toLowerCase().includes(filter.toLowerCase())
     );
+
+  const findContact = evt => {
+    setFilter(evt.currentTarget.value);
   };
 
-  findContact = ({ currentTarget: { value } }) => {
-    this.setState({ filter: value });
-  };
-
-  deleteContact = contactId => {
-    this.setState(({ contacts }) => ({
-      contacts: contacts.filter(({ id }) => id !== contactId),
-    }));
-  };
-
-  componentDidMount() {
-    const contacts = localStorage.getItem('contacts');
-    const parsedContacts = JSON.parse(contacts);
-
-    if (parsedContacts) {
-      this.setState({ contacts: parsedContacts });
+  const deleteContact = contactId => {
+    setContacts(prevState => prevState.filter(({ id }) => id !== contactId));
     };
-  };
-
-  componentDidUpdate(prevProps, prevState) {
-    if (this.state.contacts !== prevState.contacts) {
-      localStorage.setItem('contacts', JSON.stringify(this.state.contacts));
-    };
-  };
-
-  render() {
+  
     return (
       <div
         style={{
-          height: '100vh',
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
@@ -77,24 +55,21 @@ class App extends Component {
       >
         <div>
           <h1 className={css.title}>Phonebook</h1>
-          <ContactForm onSubmit={this.formSubmitHandler} />
+          <ContactForm onSubmit={formSubmitHandler}/>
           <h2 className={css.title}>Contacts</h2>
           <Filter
-            value={this.state.filter}
-            onChange={this.findContact}
+            value={filter}
+            onChange={findContact}
           />
-          {this.state.contacts.length === 0 ?
+          {contacts.length === 0 ?
             (<p className={css.messageUser}>There are no contacts in the Phonebook</p>
             ) : (
               <ContactList
-                contacts={this.filterContacts()}
-                onDeleteContact={this.deleteContact}
+                contacts={filterContacts}
+                onDeleteContact={deleteContact}
               />
             )}
         </div>
       </div>
     );
-  };
 };
-
-export default App;
